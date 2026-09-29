@@ -102,17 +102,18 @@ function Impound.vehicleNear(source, plate, radius)
         end
         return nil
     end
-    local v = Evora.clientRequest(source, "vehicleByPlate", { plate = plate, radius = radius }, 4000)
+    local v = Evora.clientRequest(source, "vehicleByPlate", { plate = plate, plates = plateVariants(plate), radius = radius }, 4000)
     if type(v) ~= "table" or not v.netId then return nil end
     return { entity = nil, netId = tonumber(v.netId), model = tonumber(v.model), dist = tonumber(v.dist) or radius }
 end
 
-local function deleteVehicle(source, veh)
+local function deleteVehicle(source, veh, plate)
     if not cfg().DeleteVehicle or not veh then return end
     if veh.entity and DoesEntityExist(veh.entity) then
         DeleteEntity(veh.entity)
     elseif veh.netId then
-        TriggerClientEvent("evora_police:vehicle:delete", source, veh.netId)
+        -- The client only deletes a vehicle that carries one of these plates.
+        TriggerClientEvent("evora_police:vehicle:delete", source, veh.netId, plateVariants(plate))
     end
 end
 
@@ -161,7 +162,7 @@ function Impound.execute(source, context, reasonLabel, fee)
     Impound.cache[row.plate] = row
     Officers.increment(officerId, "impounds_issued", 1)
     I.ImpoundHooks.onImpound(row)
-    deleteVehicle(source, veh)
+    deleteVehicle(source, veh, row.plate)
 
     Evora.notify(source, "impound_done_officer", { plate = row.plate, location = loc.label }, "success")
     local ownerSrc = P.getSource(row.owner_id)

@@ -69,10 +69,29 @@ function Equipment.takeKit(source, kitId)
     Logs.add("field", "equipment_take", { actor = user_id, fields = { { L("field_kit"), kit.label } } })
 end
 
+-- Weapon names handed out by any kit.
+local function kitWeapons()
+    local set = {}
+    for _, k in ipairs((Config.Equipment and Config.Equipment.Kits) or {}) do
+        for _, w in ipairs(k.weapons or {}) do set[w.name:upper()] = true end
+    end
+    return set
+end
+
 function Equipment.returnAll(source)
     local user_id = gate(source, "equipment", "equipment")
     if not user_id then return end
-    I.Weapons.clear(source)
+    if (Config.Equipment and Config.Equipment.ReturnMode) == "all" then
+        I.Weapons.clear(source)
+    else
+        -- Personal weapons stay with the officer.
+        local issued, keep = kitWeapons(), {}
+        for name, data in pairs(I.Weapons.get(source)) do
+            if not issued[name] then keep[name] = data end
+        end
+        I.Weapons.clear(source)
+        if next(keep) then I.Weapons.give(source, keep) end
+    end
     TriggerClientEvent("evora_police:armour", source, 0)
     Evora.notify(source, "equipment_returned", nil, "info")
     Logs.add("field", "equipment_return", { actor = user_id })

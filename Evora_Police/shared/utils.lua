@@ -101,8 +101,27 @@ end
 
 -- Cleans free text coming from players: strips control characters and markup brackets,
 -- collapses whitespace and limits the length (in characters, UTF-8 aware).
+-- Drops byte sequences that are not valid UTF-8 (they break JSON consumers such as Discord).
+function Utils.validUtf8(s)
+    if type(s) ~= "string" then return "" end
+    if utf8.len(s) then return s end
+    local out, i, n = {}, 1, #s
+    while i <= n do
+        if utf8.len(s, i, i) then
+            local lead = s:byte(i)
+            local size = lead < 0x80 and 1 or lead >= 0xF0 and 4 or lead >= 0xE0 and 3 or 2
+            out[#out + 1] = s:sub(i, i + size - 1)
+            i = i + size
+        else
+            i = i + 1
+        end
+    end
+    return table.concat(out)
+end
+
 function Utils.sanitize(s, maxLen, keepNewLines)
     if type(s) ~= "string" then return "" end
+    s = Utils.validUtf8(s)
     if keepNewLines then
         s = s:gsub("\r\n", "\n"):gsub("[\0-\9\11-\31\127]", "")
         s = s:gsub("\n\n\n+", "\n\n")
@@ -121,7 +140,7 @@ end
 -- FiveM names are shown in vRP menus (HTML) and chat: remove markup characters.
 function Utils.safeName(name)
     if type(name) ~= "string" or name == "" then return "?" end
-    local clean = name:gsub("[\0-\31\127<>]", ""):gsub("%^%d", "")
+    local clean = Utils.validUtf8(name):gsub("[\0-\31\127<>]", ""):gsub("%^%d", "")
     clean = Utils.trim(clean)
     if clean == "" then return "?" end
     return Utils.utf8sub(clean, 1, 32)

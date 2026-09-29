@@ -21,17 +21,21 @@ local function drop(user_id, source)
     if source then
         if dropped[source] then return end
         dropped[source] = true
+        SetTimeout(10000, function() dropped[source] = nil end)
     end
-    if not user_id then return end
-    Evora.emit("playerDropped", user_id, source)
-    Evora.Confirm.cancelFor(source)
-    Evora.Integrations.Popup.cancelFor(source)
-    Evora.Spectate.onDropped(source)
-    Evora.Menu.forget(source)
-    Evora.RPC.forget(source)
-    Gov.forget(user_id)
-    P.detach(user_id, source)
-    SetTimeout(10000, function() dropped[source] = nil end)
+    if user_id then Evora.emit("playerDropped", user_id, source) end
+    -- Per-connection state exists even for players that never finished loading.
+    if source then
+        Evora.Confirm.cancelFor(source)
+        Evora.Integrations.Popup.cancelFor(source)
+        Evora.Spectate.onDropped(source)
+        Evora.Menu.forget(source)
+        Evora.RPC.forget(source)
+    end
+    if user_id then
+        Gov.forget(user_id)
+        P.detach(user_id, source)
+    end
 end
 
 ---------------------------------------------------------------------------

@@ -9,7 +9,8 @@
 
 Config.Equipment = {
     Cooldown = 120,          -- seconds between two kits for the same officer
-    ReturnEnabled = true,    -- "تسليم العتاد": removes all weapons
+    ReturnEnabled = true,    -- "تسليم العتاد"
+    ReturnMode = "kit",      -- "kit": removes only weapons handed out by the kits below | "all": removes every weapon
 
     Kits = {
         {

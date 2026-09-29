@@ -85,6 +85,11 @@ local function prepareTarget(source, officerId, name, targetSrc, targetId)
             icon = name,
         })
         if not accepted then Evora.notify(source, Confirm.failMessage(reason, a.confirm == "self"), nil, "error") return false end
+        -- The officer may have been demoted or clocked out during the wait.
+        if not Gov.has(Gov.getProfile(officerId, true), a.permission or "field") then
+            Evora.notify(source, "err_no_permission", nil, "error") return false
+        end
+        if not Officers.dutyOk(officerId, "field") then Evora.notify(source, "err_not_on_duty", nil, "error") return false end
         ok, err = Targets.check(source, targetSrc, targetId, Targets.radius() + 2.0)
         if not ok then Evora.notify(source, err, nil, "error") return false end
     end
@@ -116,9 +121,14 @@ function handlers.seizeWeapons(source, officerId, targetSrc, targetId)
     table.sort(names)
     I.Weapons.clear(targetSrc)
     if actionCfg("seizeWeapons").giveToOfficer then
+        -- vRP keeps weapons client-side: only hand over well-formed names and a capped amount of ammo.
+        local maxAmmo = actionCfg("seizeWeapons").maxAmmo or 250
         for name, data in pairs(weapons) do
-            I.Inventory.give(officerId, "wbody|" .. name, 1)
-            if (tonumber(data.ammo) or 0) > 0 then I.Inventory.give(officerId, "wammo|" .. name, tonumber(data.ammo)) end
+            if name:match("^WEAPON_[%w_]+$") and #name <= 48 then
+                I.Inventory.give(officerId, "wbody|" .. name, 1)
+                local ammo = math.min(math.max(0, math.floor(tonumber(data.ammo) or 0)), maxAmmo)
+                if ammo > 0 then I.Inventory.give(officerId, "wammo|" .. name, ammo) end
+            end
         end
     end
     Evora.notify(source, "field_weapons_seized_officer", { count = #names }, "success")
@@ -267,6 +277,10 @@ RPC.register("field:vehicleSeize", { feature = "Field", perm = "field", duty = "
     Field.vehicleSessions[ctx.user_id] = nil
     if not session or session.token ~= data.token or GetGameTimer() > session.expires then return nil, L("err_confirm_expired") end
     if actionCfg("vehicleSearch").allowSeizeContraband == false then return nil, L("err_feature_disabled") end
+    if not Gov.has(ctx.profile, actionCfg("vehicleSearch").permission or "field")
+        or not Gov.has(ctx.profile, actionCfg("seizeContraband").permission or "field") then
+        return nil, L("err_no_permission")
+    end
     -- The officer must still be next to the same vehicle.
     local veh = Field.nearestVehicle(ctx.source, (actionCfg("vehicleSearch").radius or 5.0) + 2.0)
     if not veh or veh.plate ~= session.vehicle.plate then return nil, L("field_no_vehicle") end

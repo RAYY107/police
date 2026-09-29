@@ -97,7 +97,7 @@ function Logs.webhook(category, embed)
     embed.timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     if embed.title then embed.title = clip(embed.title, 250) end
     if embed.description then embed.description = clip(embed.description, 4000) end
-    local payload = { username = hooks.username or "Evora_Police", embeds = { embed } }
+    local payload = { username = hooks.username or "Evora_Police", embeds = { embed }, allowed_mentions = { parse = {} } }
     if type(hooks.avatar) == "string" and hooks.avatar ~= "" then payload.avatar_url = hooks.avatar end
     if #queue >= MAX_QUEUE then table.remove(queue, 1) end
     queue[#queue + 1] = { url = url, body = json.encode(payload) }

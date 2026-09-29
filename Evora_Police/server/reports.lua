@@ -84,6 +84,7 @@ end
 function Reports.createFlow(source)
     local user_id = P.getUserId(source)
     if not user_id then return end
+    if not Evora.feature("CitizenReport") then return Evora.notify(source, "err_feature_disabled", nil, "error") end
     local values = Evora.Integrations.Popup.input(source, L("report_title"), {
         { key = "id", label = L("field_target_id"), type = "number", min = 1 },
         { key = "reason", label = L("field_reason"), type = "textarea", max = cfg().MaxReasonLength or 250 },

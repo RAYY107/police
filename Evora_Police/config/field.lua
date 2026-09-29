@@ -11,7 +11,7 @@
 Config.Field = {
     Actions = {
         cuff            = { enabled = true, permission = "field", confirm = false, requireCuffed = false, animation = true },
-        seizeWeapons    = { enabled = true, permission = "field", confirm = false, requireCuffed = true, giveToOfficer = false },
+        seizeWeapons    = { enabled = true, permission = "field", confirm = false, requireCuffed = true, giveToOfficer = false, maxAmmo = 250 },
         drag            = { enabled = true, permission = "field", confirm = false, requireCuffed = true },
         search          = { enabled = true, permission = "field", confirm = false, requireCuffed = false, showMoney = true, showWeapons = true },
         vehicleSearch   = { enabled = true, permission = "field", confirm = false, radius = 5.0, allowSeizeContraband = true },

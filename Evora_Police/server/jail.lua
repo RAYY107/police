@@ -330,6 +330,7 @@ function Jail.checkFlow(source)
     if not user_id then return end
     local values = I.Popup.input(source, L("jail_check_title"), { { key = "id", label = L("field_citizen_id"), type = "number", min = 1 } })
     if not values then return Evora.notify(source, "action_cancelled", nil, "info") end
+    if not requirePerm(source, "jailCheck") then return end
     if not P.exists(values.id) then return Evora.notify(source, "err_unknown_id", nil, "error") end
     local status = Jail.status(values.id)
     status.user_id = values.id
@@ -412,7 +413,10 @@ function Jail.monitorFlow(source, parent)
         if not requirePerm(src, "jailMonitor") then return end
         local targetSrc = P.getSource(targetId)
         if not targetSrc or not Jail.isJailed(targetId) then return Evora.notify(src, "err_target_offline", nil, "error") end
-        local ok, err = Evora.Spectate.start(src, targetSrc, "prisoner")
+        local adminId = P.getUserId(src)
+        local ok, err = Evora.Spectate.start(src, targetSrc, "prisoner", function()
+            return Evora.feature("Jail") and Jail.isJailed(targetId) and Gov.has(Gov.cached(adminId), "jailMonitor")
+        end)
         if not ok then Evora.notify(src, err, nil, "error") end
     end, parent)
     if menu then Evora.Menu.open(source, menu) end
@@ -607,14 +611,17 @@ Evora.on("playerDropped", function(user_id)
     Jail.tasks[user_id] = nil
 end)
 
--- 1 s authoritative timer.
+-- 1 s authoritative timer. Counts elapsed game time, so server hitches do not stretch sentences.
 Citizen.CreateThread(function()
+    local last = GetGameTimer()
     while true do
         Citizen.Wait(1000)
+        local step = math.floor((GetGameTimer() - last) / 1000)
+        last = last + step * 1000
         local countOffline = cfg().CountOfflineTime == true
         for uid, e in pairs(Jail.active) do
-            if not e.pendingRelease and not e.finishing and (countOffline or P.byUser[uid]) then
-                e.remaining = e.remaining - 1
+            if step > 0 and not e.pendingRelease and not e.finishing and (countOffline or P.byUser[uid]) then
+                e.remaining = e.remaining - step
                 e.dirty = true
                 if e.remaining <= 0 then
                     e.remaining = 0

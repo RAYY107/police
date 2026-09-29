@@ -173,12 +173,22 @@ Evora.responders.nearestVehicle = function(args)
     return best and vehicleInfo(best, origin) or nil
 end
 
+-- plates: one plate or a list of accepted spellings (garage prefixes).
+local function plateMatches(veh, plates)
+    local plate = Utils.normalizePlate(GetVehicleNumberPlateText(veh) or "")
+    if plate == "" then return false end
+    for _, p in ipairs(type(plates) == "table" and plates or { plates }) do
+        if Utils.normalizePlate(tostring(p)) == plate then return true end
+    end
+    return false
+end
+
 Evora.responders.vehicleByPlate = function(args)
     local radius = tonumber(args and args.radius) or 8.0
-    local wanted = Utils.normalizePlate(args and args.plate or "")
+    local plates = args and (args.plates or args.plate) or {}
     local origin = GetEntityCoords(PlayerPedId())
     for _, veh in ipairs(GetGamePool("CVehicle")) do
-        if Utils.normalizePlate(GetVehicleNumberPlateText(veh)) == wanted and Utils.dist(origin, GetEntityCoords(veh)) <= radius then
+        if plateMatches(veh, plates) and Utils.dist(origin, GetEntityCoords(veh)) <= radius then
             return vehicleInfo(veh, origin)
         end
     end
@@ -248,10 +258,11 @@ RegisterNetEvent("evora_police:armour", function(value)
     SetPedArmour(PlayerPedId(), math.max(0, math.min(100, tonumber(value) or 0)))
 end)
 
-RegisterNetEvent("evora_police:vehicle:delete", function(netId)
+RegisterNetEvent("evora_police:vehicle:delete", function(netId, plates)
     if not netId or not NetworkDoesNetworkIdExist(netId) then return end
     local veh = NetworkGetEntityFromNetworkId(netId)
-    if not DoesEntityExist(veh) then return end
+    -- Only the impounded vehicle itself: never another entity behind a stale or forged net id.
+    if not DoesEntityExist(veh) or GetEntityType(veh) ~= 2 or not plateMatches(veh, plates) then return end
     Citizen.CreateThread(function()
         local timeout = GetGameTimer() + 2000
         NetworkRequestControlOfEntity(veh)

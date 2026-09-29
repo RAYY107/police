@@ -20,7 +20,8 @@ function Spectate.isSpectating(src)
 end
 
 -- kind: "officer" | "prisoner"
-function Spectate.start(adminSrc, targetSrc, kind)
+-- guard(): optional, re-checked every few seconds; the session ends once it returns false.
+function Spectate.start(adminSrc, targetSrc, kind, guard)
     if not adminSrc or not targetSrc then return nil, L("err_target_offline") end
     if adminSrc == targetSrc then return nil, L("err_spectate_self") end
     if not GetPlayerName(targetSrc) then return nil, L("err_target_offline") end
@@ -35,6 +36,7 @@ function Spectate.start(adminSrc, targetSrc, kind)
 
     Spectate.sessions[adminSrc] = {
         target = targetSrc, targetId = targetId, kind = kind, bucket = adminBucket, startedAt = Evora.now(),
+        guard = guard, nextCheck = GetGameTimer() + 5000,
     }
     TriggerClientEvent("evora_police:spectate:start", adminSrc, {
         target = targetSrc,
@@ -81,6 +83,14 @@ Evora.RPC.register("spectate:stop", {}, function(ctx)
     return true
 end)
 
+-- True once the session's guard no longer allows it (checked every 5 seconds).
+local function revoked(session)
+    if not session.guard or GetGameTimer() < session.nextCheck then return false end
+    session.nextCheck = GetGameTimer() + 5000
+    local ok, allowed = pcall(session.guard)
+    return not (ok and allowed)
+end
+
 -- Stream the target position so the admin camera can follow targets outside streaming range.
 Citizen.CreateThread(function()
     while true do
@@ -89,6 +99,8 @@ Citizen.CreateThread(function()
             for adminSrc, session in pairs(Spectate.sessions) do
                 if not GetPlayerName(session.target) then
                     Spectate.stop(adminSrc, "target_left")
+                elseif revoked(session) then
+                    Spectate.stop(adminSrc, "revoked")
                 else
                     local coords = P.oneSync() and P.coords(session.target) or nil
                     if coords then TriggerClientEvent("evora_police:spectate:coords", adminSrc, coords) end

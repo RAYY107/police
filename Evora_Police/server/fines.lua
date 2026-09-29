@@ -192,13 +192,16 @@ end
 function Fines.inquiryFlow(source)
     local user_id = P.getUserId(source)
     if not user_id then return end
-    local profile = Gov.getProfile(user_id, true)
-    if not Gov.has(profile, "fineInquiry") then return Evora.notify(source, "err_no_permission", nil, "error") end
+    local function allowed()
+        return Evora.feature("Fines") and Evora.feature("Inquiries") and Gov.has(Gov.getProfile(user_id, true), "fineInquiry")
+    end
+    if not allowed() then return Evora.notify(source, "err_no_permission", nil, "error") end
     if not Officers.dutyOk(user_id, "inquiries") then return Evora.notify(source, "err_not_on_duty", nil, "error") end
     local values = I.Popup.input(source, L("fine_inquiry_title"), {
         { key = "id", label = L("field_citizen_id"), type = "number", min = 1 },
     })
     if not values then return Evora.notify(source, "action_cancelled", nil, "info") end
+    if not allowed() then return Evora.notify(source, "err_no_permission", nil, "error") end
     if not P.exists(values.id) then return Evora.notify(source, "err_unknown_id", nil, "error") end
     local data = Fines.list(values.id)
     data.user_id = values.id

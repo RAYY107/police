@@ -221,10 +221,14 @@ RPC.register("affairs:recruit", { feature = "Affairs", perm = "recruit", cooldow
 
     local target = Affairs.loadTarget(uid)
     if contains(target.groups, group) then return nil, L("affairs_already_rank") end
+    -- Members of another command, or seniors, are outside the recruiter's reach.
+    for _, g in ipairs(target.groups) do
+        if not Gov.canOnRank(ctx.profile, "recruit", g) then return nil, L("err_out_of_scope") end
+    end
 
     local replaced = {}
     for _, g in ipairs(target.groups) do
-        if g ~= group and Gov.canOnRank(ctx.profile, "recruit", g) then replaced[#replaced + 1] = g end
+        if g ~= group then replaced[#replaced + 1] = g end
     end
 
     local ok, reason = Confirm.forAction("recruit", ctx.source, target.source, {
@@ -488,7 +492,11 @@ RPC.register("affairs:monitor", { feature = "Affairs", perm = "monitor" }, funct
     local ok, err = inScope(ctx, "monitor", target)
     if not ok then return nil, err end
     if not target.online then return nil, L("err_target_offline") end
-    local started, startErr = Evora.Spectate.start(ctx.source, target.source, "officer")
+    local adminId, targetId = ctx.user_id, target.user_id
+    local started, startErr = Evora.Spectate.start(ctx.source, target.source, "officer", function()
+        local targetGroups = Gov.militaryGroups(Gov.cached(targetId).groups)
+        return Evora.feature("Affairs") and #targetGroups > 0 and Gov.canOnTarget(Gov.cached(adminId), "monitor", targetGroups, targetId)
+    end)
     if not started then return nil, startErr end
     return true
 end)
@@ -524,6 +532,11 @@ RPC.register("affairs:vacationBreak", { feature = "Affairs", perm = "vacationBre
         icon = "vacation",
     })
     if not accepted then return nil, Confirm.failMessage(reason, Confirm.mode("vacationBreak") == "self") end
+    ctx.profile = Gov.getProfile(ctx.user_id, true)
+    target = Affairs.loadTarget(target.user_id)
+    ok, err = inScope(ctx, "vacationBreak", target)
+    if not ok then return nil, err end
+    if not target.vacation then return nil, L("vacation_none") end
     local done, finishErr = Vacation.finish(target.user_id, "broken", ctx.user_id)
     if not done then return nil, finishErr end
     return true

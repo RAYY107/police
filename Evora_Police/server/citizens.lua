@@ -57,6 +57,8 @@ function Citizens.inquiryFlow(source)
         { key = "id", label = L("field_citizen_id"), type = "number", min = 1 },
     })
     if not values then return Evora.notify(source, "action_cancelled", nil, "info") end
+    -- The input can stay open for minutes: re-check against live groups.
+    if not Gov.has(Gov.getProfile(user_id, true), "citizenInquiry") then return Evora.notify(source, "err_no_permission", nil, "error") end
     if not P.exists(values.id) then return Evora.notify(source, "err_unknown_id", nil, "error") end
     local card = Citizens.card(values.id)
     Evora.ui(source, "panel", { kind = "citizen", title = L("citizen_inquiry_title"), data = card })

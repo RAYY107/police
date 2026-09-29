@@ -84,9 +84,16 @@ RegisterNetEvent("evora_police:barricade:place", function(index, model, label, d
     end)
 end)
 
--- Without OneSync the server asks every client to remove a tracked barricade.
+local barricadeModels = {}
+for _, o in ipairs(Config.Barricades or {}) do
+    if type(o) == "table" and type(o.model) == "string" then barricadeModels[GetHashKey(o.model)] = true end
+end
+
+-- Without OneSync the server asks every client to remove a tracked barricade. Net ids are
+-- reported by the placing client, so only configured barricade props are ever deleted.
 RegisterNetEvent("evora_police:barricade:delete", function(netId)
     if not netId or not NetworkDoesNetworkIdExist(netId) then return end
     local object = NetworkGetEntityFromNetworkId(netId)
-    if DoesEntityExist(object) and NetworkHasControlOfEntity(object) then DeleteEntity(object) end
+    if not DoesEntityExist(object) or GetEntityType(object) ~= 3 or not barricadeModels[GetEntityModel(object)] then return end
+    if NetworkHasControlOfEntity(object) then DeleteEntity(object) end
 end)

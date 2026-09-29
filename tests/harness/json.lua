@@ -41,10 +41,16 @@ local function encode(v, seen)
             seen[v] = nil
             return "[" .. table.concat(out, ",") .. "]"
         end
+        -- Sorted keys: deterministic output (stable fixtures such as tests/ui/init.json).
+        local keys = {}
         for k, val in pairs(v) do
-            if type(val) ~= "function" then
-                out[#out + 1] = encode(tostring(k), seen) .. ":" .. encode(val, seen)
-            end
+            if type(val) ~= "function" then keys[#keys + 1] = tostring(k) end
+        end
+        table.sort(keys)
+        for _, k in ipairs(keys) do
+            local val = v[k]
+            if val == nil then val = v[tonumber(k)] end
+            out[#out + 1] = encode(k, seen) .. ":" .. encode(val, seen)
         end
         seen[v] = nil
         return "{" .. table.concat(out, ",") .. "}"

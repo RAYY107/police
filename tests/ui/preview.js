@@ -7,7 +7,8 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '../../Evora_Police/web/index.html');
 const OUT = path.resolve(__dirname, 'shots');
 const INIT = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'init.json'), 'utf8'));
-const EXE = process.env.CHROMIUM || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+// CHROMIUM=/path/to/chrome overrides the browser; otherwise a known local build or Playwright's own.
+const EXE = process.env.CHROMIUM || ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((p) => fs.existsSync(p));
 
 function mockScript() {
   const now = Math.floor(Date.now() / 1000);
@@ -47,7 +48,7 @@ function mockScript() {
 
 async function main() {
   fs.mkdirSync(OUT, { recursive: true });
-  const browser = await chromium.launch({ executablePath: EXE });
+  const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   const errors = [];
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });

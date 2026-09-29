@@ -13,6 +13,12 @@ function Evora.debug(category, msg, ...)
     print(("^6[Evora_Police:%s]^7 %s"):format(category, ok and text or msg))
 end
 
+-- Same rule as the server: a missing Config.Features entry means disabled.
+function Evora.feature(name)
+    local f = Config.Features and Config.Features[name]
+    return f ~= nil and f.enabled ~= false
+end
+
 function Evora.hasPerm(perm)
     for _, p in ipairs(Evora.state.permissions or {}) do
         if p == perm then return true end

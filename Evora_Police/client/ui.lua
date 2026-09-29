@@ -163,6 +163,13 @@ function UI.skillCheck(difficulty)
         checks = difficulty.checks or 1, speed = difficulty.speed or 1.0, zone = difficulty.zone or 0.2, key = "E",
     })
     UI.focus("skillcheck", true, false)
+    -- The NUI gives up after 6 s; this only covers a NUI that never answers.
+    SetTimeout(10000, function()
+        if skill == p then
+            skill = nil
+            p:resolve({ success = false })
+        end
+    end)
     local r = Citizen.Await(p)
     UI.focus("skillcheck", false)
     return r.success == true

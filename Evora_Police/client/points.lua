@@ -21,13 +21,13 @@ end
 
 local function build()
     points = {}
-    if Config.Features.Fines.enabled ~= false then
+    if Evora.feature("Fines") then
         for _, p in ipairs(Config.Fines.PaymentPoints or {}) do
             points[#points + 1] = { kind = "fines", coords = p.coords, radius = p.radius or 1.5, marker = p.marker, hint = LocaleUI.hint_pay_fines }
             blip(p.coords, p.blip)
         end
     end
-    if Config.Features.Impound.enabled ~= false then
+    if Evora.feature("Impound") then
         for _, loc in ipairs(Config.Impound.Locations or {}) do
             points[#points + 1] = { kind = "impound", coords = loc.coords, radius = loc.radius or 3.0, marker = loc.marker, hint = loc.label or LocaleUI.hint_impound }
             blip(loc.coords, loc.blip)

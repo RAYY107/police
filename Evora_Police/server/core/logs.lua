@@ -97,10 +97,12 @@ function Logs.webhook(category, embed)
     embed.timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     if embed.title then embed.title = clip(embed.title, 250) end
     if embed.description then embed.description = clip(embed.description, 4000) end
-    local payload = { username = hooks.username or "Evora_Police", embeds = { embed }, allowed_mentions = { parse = {} } }
+    local payload = { username = hooks.username or "Evora_Police", embeds = { embed } }
     if type(hooks.avatar) == "string" and hooks.avatar ~= "" then payload.avatar_url = hooks.avatar end
     if #queue >= MAX_QUEUE then table.remove(queue, 1) end
-    queue[#queue + 1] = { url = url, body = json.encode(payload) }
+    -- Never ping anyone. Appended as text because an empty Lua table has no fixed JSON type.
+    local body = json.encode(payload):sub(1, -2) .. ',"allowed_mentions":{"parse":[]}}'
+    queue[#queue + 1] = { url = url, body = body }
     pump()
 end
 

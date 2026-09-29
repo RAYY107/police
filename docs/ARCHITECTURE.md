@@ -33,9 +33,11 @@
                  (vRP legacy/modern) (integrations)  (4 drivers)    (server only)   (UI, effects)
 ```
 
-Clients never call domain code directly: there is exactly one inbound network event
-(`evora_police:rpc`). Each handler is registered with its feature flag, required permission
-and rate limit, so an unregistered or unauthorised call is rejected before domain code runs.
+Clients never call domain code directly. There are exactly two inbound network events:
+`evora_police:rpc` (every request) and `evora_police:cres` (answers to a question the server
+asked, e.g. "your coordinates" without OneSync, accepted only from the client that was asked).
+Each RPC handler is registered with its feature flag, required permission and rate limit, so an
+unregistered or unauthorised call is rejected before domain code runs.
 
 ## 3. Authority model
 
@@ -117,8 +119,9 @@ Evora_Police/
 │   └── server.lua                    SERVER ONLY: webhooks, tokens
 ├── shared/utils.lua
 ├── server/
-│   ├── core/  bootstrap, framework, database, players, rpc, logs, integrations, menu
-│   ├── government.lua  confirm.lua  spectate.lua
+│   ├── core/  bootstrap, framework, database, players, rpc, logs, menu
+│   ├── integrations/  base (notify, popup, chat, radio), inventory, vehicles, player
+│   ├── government.lua  confirm.lua  spectate.lua  targets.lua
 │   ├── officers.lua  vacation.lua  affairs.lua  statistics.lua  ipad.lua
 │   ├── reports.lua  wanted.lua  citizens.lua  fines.lua  jail.lua
 │   ├── field.lua  equipment.lua  security.lua  barricades.lua  impound.lua
@@ -128,17 +131,19 @@ Evora_Police/
 │   ├── main.lua                      RPC client, NUI bridge, focus stack, state
 │   ├── integrations.lua              client-side adapters (builtin cuff/drag/seats/clothing)
 │   ├── ui.lua  confirm.lua  ipad.lua  spectate.lua  jail.lua
-│   ├── field.lua  security.lua  barricades.lua  points.lua
-└── web/  index.html  css/app.css  js/icons.js  js/app.js  js/ipad.js  assets/
+│   ├── security.lua  barricades.lua  points.lua
+└── web/  index.html  css/(fonts, app)  js/(icons, core, layers, ipad)  assets/fonts/
 ```
 
-Development-only folders at the repository root: `docs/` and `tests/` (Lua test harness that
-mocks FiveM + vRP and runs the server modules against a real MariaDB).
+Development-only folders at the repository root: `docs/` and `tests/` (a Lua harness that
+mocks FiveM + vRP and runs the server modules against a real MariaDB, a client smoke test with
+mocked natives, and a headless-Chromium preview of every NUI screen).
 
 ## 7. Security model
 
-* One inbound net event, dispatched through a registry (feature flag, permission, duty,
-  rate limit, payload validation).
+* Two inbound net events: `evora_police:rpc`, dispatched through a registry (feature flag,
+  permission, duty, rate limit, payload validation), and `evora_police:cres`, which only
+  resolves a pending server request of the same client.
 * `local src = source` is captured before any yield in every handler.
 * Targets are validated server-side: online, correct `user_id`, distance from server-side
   ped coordinates (OneSync), within the administrator's scope.
@@ -146,6 +151,7 @@ mocks FiveM + vRP and runs the server modules against a real MariaDB).
 * Webhook URLs, bot tokens and database access exist only in server scripts.
 * All strings shown in NUI are rendered with `textContent`; Discord output is escaped.
 * No client event can change jail time, money, groups, inventory or statistics.
+* The results of the step 9 review are recorded in `docs/REVIEW.md`.
 
 ## 8. Performance model
 
@@ -159,6 +165,8 @@ mocks FiveM + vRP and runs the server modules against a real MariaDB).
 | Client interaction points | 750 ms far / per frame within 15 m | markers, hints |
 | Security alert (client) | 400 ms | only while an alert exists; per-frame effects only while affected |
 | Confirmation keys (client) | per frame | only while a prompt is visible |
+| Spectate stream + guard (server) | 1 s / 5 s | only while a session exists |
+| Profile safety net (server) | 60 s | re-reads groups of online players (in-memory vRP data) |
 
 NUI timers run only while their layer is visible.
 

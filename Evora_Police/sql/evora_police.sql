@@ -109,7 +109,8 @@ CREATE TABLE IF NOT EXISTS `evora_police_wanted` (
     `cleared_by_name` VARCHAR(64) NOT NULL DEFAULT '',
     `cleared_at` INT NOT NULL DEFAULT 0,
     PRIMARY KEY (`id`),
-    KEY `idx_target_active` (`target_id`, `active`)
+    KEY `idx_target_active` (`target_id`, `active`),
+    KEY `idx_active` (`active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `evora_police_fines` (

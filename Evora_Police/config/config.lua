@@ -62,8 +62,9 @@ Config.Features = {
 ---------------------------------------------------------------------------
 -- Duty / attendance
 ---------------------------------------------------------------------------
+-- Officers are always clocked out when they disconnect: attendance only counts while
+-- clocked in and connected.
 Config.Duty = {
-    ClockOutOnDisconnect = true,
     HeartbeatInterval = 60,     -- seconds between attendance heartbeats
     MaxStaleSessionHours = 12,  -- cap applied when closing a session found after a crash
     -- Actions that require the officer to be clocked in.

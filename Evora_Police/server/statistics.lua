@@ -70,7 +70,7 @@ function Stats.sendWebhook(actorId, top)
         description = #top == 0 and L("top_empty") or L("top_webhook_by", { name = Evora.Logs.who(actorId) }),
         fields = fields,
     })
-    Evora.Logs.add("statistics", "top_report", { actor = actorId, fields = { { L("log_field_count"), #top } } })
+    Evora.Logs.add("statistics", "top_report", { actor = actorId, noWebhook = true, fields = { { L("log_field_count"), #top } } })
 end
 
 Evora.RPC.register("affairs:top", { feature = "Affairs", perm = "statistics" }, function(ctx)

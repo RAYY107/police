@@ -97,6 +97,8 @@ end
 
 -- Puts an online prisoner in jail: teleport, cuffs, clothing, HUD.
 function Jail.apply(e, src)
+    -- The client needs a moment to teleport and load collision: no escape checks meanwhile.
+    e.grace = GetGameTimer() + 15000
     P.teleport(src, cfg().Entry, cfg().EntryHeading)
     if cfg().Handcuff and cfg().Handcuff.Enabled then I.Handcuff.set(src, true) end
     if cfg().Clothing and cfg().Clothing.Enabled then I.Clothing.applyPreset(src, jailPreset()) end
@@ -450,8 +452,9 @@ function Jail.onEscape(user_id, src)
     local esc = cfg().Escape or {}
     if not esc.Enabled then return end
     local now = GetGameTimer()
-    if e.lastEscape and now - e.lastEscape < 6000 then return end
+    if (e.lastEscape and now - e.lastEscape < 6000) or (e.grace and now < e.grace) then return end
     e.lastEscape = now
+    e.grace = now + 6000
     P.teleport(src, returnPoint(), cfg().EntryHeading)
     local added = 0
     local cap = (esc.MaxAddedMinutes or 60) * 60
@@ -649,6 +652,17 @@ Citizen.CreateThread(function()
                     if pos and Utils.dist2d(pos, c) > radius then Jail.onEscape(uid, src) end
                 end
             end
+        end
+    end
+end)
+
+-- Resource stop: hand the latest remaining times to the database driver immediately.
+AddEventHandler("onResourceStop", function(resource)
+    if resource ~= GetCurrentResourceName() then return end
+    for _, e in pairs(Jail.active) do
+        if not e.finishing then
+            DB.fire("UPDATE evora_police_jail SET remaining_seconds = ?, added_seconds = ?, reduced_seconds = ?, updated_at = ? WHERE user_id = ?",
+                { math.max(0, e.remaining), e.added, e.reduced, Evora.now(), e.user_id })
         end
     end
 end)

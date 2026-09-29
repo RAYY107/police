@@ -370,6 +370,13 @@ function DB.insert(sql, params)
     return tonumber(r)
 end
 
+-- Dispatches a statement to the driver without waiting for the answer (resource stop).
+function DB.fire(sql, params)
+    if not DB.ready then return end
+    local q, p = prepare(sql, params)
+    pcall(DB.driver.execute, q, p, function() end)
+end
+
 function DB.executeAsync(sql, params)
     Evora.thread(function() DB.execute(sql, params) end)
 end

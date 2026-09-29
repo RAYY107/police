@@ -135,6 +135,8 @@ function Logs.add(category, action, entry)
         Evora.print("[%s] %s — %s → %s", category, action, actorName ~= "" and who(actorId, actorName) or "-", targetName ~= "" and who(targetId, targetName) or "-")
     end
 
+    if entry.noWebhook then return end
+
     local fields = {}
     if actorId > 0 then fields[#fields + 1] = { name = entry.actorLabel or L("log_field_actor"), value = who(actorId, actorName), inline = true } end
     if targetId > 0 then fields[#fields + 1] = { name = entry.targetLabel or L("log_field_target"), value = who(targetId, targetName), inline = true } end

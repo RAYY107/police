@@ -32,7 +32,8 @@ function Garage.findByPlate(plate)
         local ok, r = pcall(c.custom, plate)
         result = ok and r or nil
     elseif t == "export" and type(c.export) == "table" and I.resourceUp(c.export.resource) then
-        local ok, r = pcall(function() return exports[c.export.resource][c.export.fn](plate) end)
+        local res = exports[c.export.resource]
+        local ok, r = pcall(function() return res[c.export.fn](res, plate) end)
         result = ok and r or nil
     elseif t == "sql" and type(c.sql) == "table" and type(c.sql.ownerByPlate) == "string" then
         local candidates = { stripPrefix(plate) }

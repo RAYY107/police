@@ -70,7 +70,6 @@ client_scripts {
     'client/ipad.lua',
     'client/spectate.lua',
     'client/jail.lua',
-    'client/field.lua',
     'client/security.lua',
     'client/barricades.lua',
     'client/points.lua',

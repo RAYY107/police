@@ -21,6 +21,7 @@ function Ipad.office(user_id)
         finesIssued = tonumber(record.fines_issued) or 0,
         jailsIssued = tonumber(record.jails_issued) or 0,
         reportsHandled = tonumber(record.reports_handled) or 0,
+        impoundsIssued = tonumber(record.impounds_issued) or 0,
         session = session,
         attendance = (tonumber(record.attendance_total) or 0) + session,
         onDuty = Officers.isOnDuty(user_id),
@@ -28,6 +29,7 @@ function Ipad.office(user_id)
         vacationBalance = tonumber(record.vacation_balance) or 0,
         vacation = vac and { active = true, endsAt = tonumber(vac.end_at), startedAt = tonumber(vac.start_at), days = tonumber(vac.days) } or { active = false },
         lastClockIn = tonumber(record.last_clock_in) or 0,
+        lastClockOut = tonumber(record.last_clock_out) or 0,
     }
 end
 

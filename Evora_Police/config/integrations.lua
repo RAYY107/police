@@ -32,7 +32,7 @@ Config.Integrations = {
         type = "vrp",                  -- "vrp" | "event" | "client_export" | "builtin" | "custom"
         -- "event": TriggerClientEvent(event, source, table.unpack(format(...)))
         event = "mythic_notify:client:SendAlert",
-        -- "client_export": exports[resource][fn](table.unpack(format(...))) on the client
+        -- "client_export": exports[resource]:fn(table.unpack(format(...))) on the client
         resource = "mythic_notify",
         fn = "SendAlert",
         -- kind: "success" | "error" | "info" | "warning", duration in seconds
@@ -119,7 +119,7 @@ Config.Integrations = {
             -- Garages that store a plate per vehicle:
             -- ownerByPlate = "SELECT user_id, vehicle AS model FROM vrp_user_vehicles WHERE vehicle_plate = ?",
         },
-        export = { resource = "", fn = "" }, -- exports[resource][fn](plate) → { owner = user_id, model = "adder" }
+        export = { resource = "", fn = "" }, -- exports[resource]:fn(plate) → { owner = user_id, model = "adder" }
         custom = function(plate) return nil end, -- → { owner = user_id, model = "adder" } | nil
     },
 
